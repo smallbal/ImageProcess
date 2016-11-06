@@ -12,8 +12,8 @@ using namespace cv;
 using namespace std;
 
 
-#define INITAL_N 3	//N的初始值
-#define INITAL_M 9	//M的初始值
+#define INITIAL_N 21	//local window的初始size为21
+#define INITIAL_M 41	//local window的M设为41
 #define TS 0.60	//Fc阈值
 #define BLACK 0
 #define WHITE 255
@@ -22,8 +22,8 @@ enum {
 	PERCOLATION_NOTTEST = 0,
 	PERCOLATION_DP,
 	PERCOLATION_DC,
-	PERCOLATION_BACKGROUND,
-	PERCOLATION_CRACK
+	PERCOLATION_CRACK,
+	PERCOLATION_BACKGROUND = WHITE
 };
 
 #define PIXEL_VALUE(IMG, X, Y) (uchar)(*((IMG).data + (IMG).step[0] * (X) + (IMG).step[1] * (Y)))
@@ -32,7 +32,8 @@ enum {
 
 
 float Func_Fc(	int Count,int Cmax);
-float Func_Iterator_T(	const vector<Point> & Ip, uchar T,float w);
+float Func_Iterator_T(	const vector<uchar> & Ip, float T,float w);
+float Func_Iterator_W( const float Fc );
 const vector<uchar> & Func_Max_Pixel_Value(const Mat & img , const vector<Point> & pixels);
 
 
@@ -41,5 +42,8 @@ const vector<Point> Func_Area_8_Neighborhood( const Mat & img_naive, vector<Poin
 
 bool Func_Is_Edge(const Mat & img, const Point & p);
 bool Func_Iter_Spread(const Mat & img_naive, Mat & img_state , Point & focal_pixel , vector<Point> & Dc);
+
+void Func_Percolation( const Mat & img_naive, Mat & img_state , Mat & img_result);
+
 
 #endif

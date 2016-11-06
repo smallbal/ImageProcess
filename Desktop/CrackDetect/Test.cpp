@@ -36,16 +36,32 @@ int iter_count = 0;
 int main(int argc, char **argv)
 {
 
-	Mat naive = imread("./timg.jpg");
-	Mat gray_img;	//灰度图像
-	cv::cvtColor(naive, gray_img, cv::COLOR_BGR2GRAY);
-	//imshow("show", naive);
-	//imshow("gray_img",gray_img);
+	Mat img_naive = imread("./timg.jpg");
+	Mat img_gray;	//灰度图像
+	cv::cvtColor(img_naive, img_gray, cv::COLOR_BGR2GRAY);
+	Mat img_state;
+	Mat img_result;
+	
+	/*Mat img_result(3,3,CV_8UC1);
+	for(size_t i = 0 ; i < img_result.rows ; ++i)
+		for(size_t j = 0 ; j < img_result.cols ; ++j)
+			img_result.at<uchar>(i,j) = i*3+j;
+	cout<<img_result<<endl;
+	cout<<PIXEL_VALUE(img_result , 1 ,2)-0<<endl;
+	cout<<img_result.at<uchar>(Point(1,2))-0<<endl;*/
+	/*cout<<img_naive.at<uchar>(Point(0,0))<<endl;*/
+
+	Func_Percolation(img_gray , img_state , img_result);
 	//Mat result(naive.rows, naive.cols,CV_8UC1,Scalar::all(PERCOLATION_NOTTEST));
 	//cout<<"pixel value = "<<result.at<uchar>(Point(0,0))+0<<endl;
-	int N =INITIAL_N;
-	Point focal_pixel = Point(0,0); //焦点像素从（0,0）开始推移
-	float T = gray_img.at<float>(focal_pixel); //T初始值设为焦点像素的亮度值
+	// Point focal_pixel = Point(0,0); //焦点像素从（0,0）开始推移
+	//float T = gray_img.at<float>(focal_pixel); //T初始值设为焦点像素的亮度值
+	
+
+
+
+
+
 
 
 
