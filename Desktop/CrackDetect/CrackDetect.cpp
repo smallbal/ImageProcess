@@ -1,6 +1,8 @@
 
 #include <math.h> //abs()
 #include <algorithm> /*find()*/
+// #include<Windows.h> //¸ß¾«¶ÈÊ±¼ä¼ÆËã
+#include <time.h> //clock() , CLOCKS_PER_SEC
 #include "CrackDetect.h"
 //OpencvÖĞµÄPoint(x,y)¶ÔÓ¦×ø±êÏµµÄ(col,row)
 
@@ -57,6 +59,8 @@ const vector<Point>  Func_Pixel_8_Neighborhood( const Mat & img, const Point & p
 	return vec_out;
 }
 
+
+//±àĞ´ºóÕÒµ½findContours()º¯Êı
 const vector<Point> Func_Area_8_Neighborhood( const Mat & img_naive, vector<Point> circle, Mat & img_state, vector<Point> & vec_out)
 {
 	vector<Point> neighbor;
@@ -126,30 +130,34 @@ float Func_Iterator_W(const float Fc)
 void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result)
 {
 	img_state = Mat(img_gray.rows , img_gray.cols , CV_8UC1 , Scalar(PERCOLATION_NOTTEST));
+	img_result = Mat(img_gray.rows, img_gray.cols , CV_8UC1 , Scalar(WHITE));
 	Mat img_gray_with_border;
 	//Ôö¼ÓÉÏÏÂ×óÓÒ¸÷¿íÎªMµÄ±ß¿ò£¬±ãÓÚpercolation
 	copyMakeBorder(img_gray , img_gray_with_border , INITIAL_M-1 , INITIAL_M-1 , INITIAL_M-1 , INITIAL_M-1 , BORDER_CONSTANT ,Scalar(WHITE));
 	copyMakeBorder(img_state,img_state , INITIAL_M-1 , INITIAL_M-1 , INITIAL_M-1 , INITIAL_M-1 , BORDER_CONSTANT , Scalar(PERCOLATION_BACKGROUND));
 	
+	double Ts = TS;
 	int N = INITIAL_N;
 	int M = INITIAL_M;
 	int x =0 ;	//²»¼Ó±ß¿ò»Ò¶ÈÍ¼µÄÁĞcol
 	int y =0;	//²»¼Ó±ß¿ò»Ò¶ÈÍ¼µÄĞĞrow
+	int pixel_number = 0; //´Ó0µ½img_gray.size() - 1
 	Point focal_pixel = Point(x+INITIAL_M-1 ,y+INITIAL_M-1); //img_gray_with_borderÉÏ¶ÔÓ¦µÄ×ø±ê
 	
 	Mat local_window_gray;
-	Mat local_window_state;
+	Mat local_window_state;	//±ê×¢×´Ì¬µÄ´°¿Ú£¬×´Ì¬ÓĞ£ºNOTTEST , CRACK , BACKGROUND
+	Mat local_window_D_state; //±ê×¢DcºÍDpµÄ¾Ö²¿´°¿Ú,×´Ì¬ÓĞ: Dc , Dp £¬NOTTEST
 	vector<Point> Dp;	//Dp¼ÇÂ¼µÄÊÇlocal_windowµÄ×ø±ê
 	vector<uchar> Ip;	//Ip¼ÇÂ¼µÄÊÇDpµÄÁÁ¶ÈÖµ
 	vector<Point> Dc;	//Dc¼ÇÂ¼µÄÊÇlocal_windowµÄ×ø±ê
-	float Fc = 0;
+	float Fc = 0.0;
 	float T = img_gray.at<uchar>(focal_pixel);
 	float w = 0;	//¼ÓËÙÒò×Ó
 	
 	int iter_count = 0;
-	// while(x < img_gray.cols && y < img_gray.rows)
-	// {
-		if(x == 0 || x == img_gray.cols || y ==0 || y == img_gray.rows)
+	while(x < img_gray.cols && y < img_gray.rows)
+	{
+		if(x == 0 || x == img_gray.cols-1 || y ==0 || y == img_gray.rows-1)
 		{
 			N = INITIAL_N * 2 -1; 	//41
 			M = INITIAL_M * 2 - 1 ;	//81
@@ -171,74 +179,135 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 		//cout<<"[x,y] "<<focal_pixel<<endl;
 		local_window_gray = img_gray_with_border( Rect(focal_pixel.x-(M-1)/2 , focal_pixel.y -(M-1)/2 , M , M));
 		local_window_state = img_state( Rect(focal_pixel.x-(M-1)/2 , focal_pixel.y -(M-1)/2 , M , M));
+		local_window_D_state = Mat(M, M, CV_8UC1, Scalar(PERCOLATION_NOTTEST));
 		//local_window_gray = Mat(img_gray_with_border , Rect(focal_pixel.x-(M-1)/2 , focal_pixel.y -(M-1)/2 , M , M));
 		Dp.clear();
-		while(iter_count <= 4)
+		iter_count = 0;
+		do
 		{
-		++iter_count;
-		cout<<"iter_count = "<<iter_count<<endl;
-		Ip.clear();
-		//µÚ1´Îµü´ú£º½«focal_pixel¼ÓÈëDp
-		if(iter_count == 1)
-		{
-			Dp.push_back(Point((M-1)/2,(M-1)/2));
-		}
-		for(size_t i = 0 ; i < Dp.size() ; ++i)
-		{
-			//ÅĞ¶ÏDpÊÇ·ñ´¥¼°±ß½çN
-			if(abs(Dp[i].x - (N-1)/2 >= (N-1)/2) || abs(Dp[i].y - (N-1)/2) >= (N-1)/2)
-				break;//´¥¼°±ß½çÔòÍË³öµ±Ç°focal_pixelµÄÉøÍ¸Ñ­»·
-		}
-		//½«DpµÄÁÁ¶ÈIpÇó³ö
-		for(size_t i = 0 ; i< Dp.size() ; ++i)
-		{
-			cout<<"Dp["<<i<<"] = "<<Dp[i]<<endl;
-			Ip.push_back(PIXEL_VALUE(local_window_gray, Dp[i].x , Dp[i].y));
-		}
-		cout<<endl;
-		T = Func_Iterator_T(Ip , T , w); 
-		//Çó³ö´ËÂÖDpµÄ8-ÁÚÓòDc£¬²¢ÔÚimg_stateÖĞ½«ÏàÓ¦ÏñËØµÄ×´Ì¬±ê¼ÇÎªPERCOLATION_DC
-		Func_Area_8_Neighborhood(local_window_gray , Dp , local_window_state , Dc);
-		Func_Area_State_Change(img_state , Dp , PERCOLATION_DP);	//½«Dp¶ÔÓ¦ÏñËØÔÚimg_stateÉÏ±ê¼ÇÎªPERCOLATION_DP
+			++iter_count;
+			// cout<<"iter_count = "<<iter_count<<endl;
+			Dc.clear();
+			Ip.clear();
+			//µÚ1´Îµü´ú£º½«focal_pixel¼ÓÈëDp
+			if(iter_count == 1)
+			{
+				Dp.push_back(Point((M-1)/2,(M-1)/2));
+				local_window_D_state.at<uchar>(Point((M-1)/2,(M-1)/2)) = PERCOLATION_DP;
+			}
+			
+			//½«DpµÄÁÁ¶ÈIpÇó³ö
+			for(size_t i = 0 ; i< Dp.size() ; ++i)
+			{
+				// cout<<"Dp["<<i<<"] = "<<Dp[i]<<endl;
+				Ip.push_back(PIXEL_VALUE(local_window_gray, Dp[i].x , Dp[i].y));
+			}
+			
+			//µÚ2´Îµü´úÇ°ÅĞ¶ÏÉÏ´ÎµÄDpÖĞÊÇ·ñ°üº¬±³¾°µã
+			if(iter_count == 2)
+			{
+				vector<Point>::iterator iter = Dp.begin();
+				for(; iter != Dp.end() ; ++iter)
+				{
+					if(local_window_state.at<uchar>(*iter) == PERCOLATION_BACKGROUND)
+						break;
+				}
+				if(iter != Dp.end())
+				{
+					Fc = 1.0;
+					break;
+				}
+			}
+			// cout<<endl;
+			T = Func_Iterator_T(Ip , T , w); 
+			//Çó³ö´ËÂÖDpµÄ8-ÁÚÓòDc£¬²¢ÔÚimg_stateºÍlocal_window_stateÖĞ½«ÏàÓ¦ÏñËØµÄ×´Ì¬±ê¼ÇÎªPERCOLATION_DC
+			Func_Area_8_Neighborhood(local_window_gray , Dp , local_window_D_state , Dc);
+			//½«Dp¶ÔÓ¦ÏñËØÔÚlocal_window_D_stateÉÏ±ê¼ÇÎªPERCOLATION_DP
+			Func_Area_State_Change(local_window_D_state , Dp , PERCOLATION_DP);	
 
-		//ÅĞ¶ÏDcÖĞµÄÁÁ¶È£¬Ğ¡ÓÚTµÄ¶ÔÓ¦DcÖĞµÄÏñËØ±»¹éÈëDp,²¢¸Ä±äDcµÄÏàÓ¦±ê¼ÇÎªDp
-		int Dc2Dp = 0;
-		uchar Darkest_Value = WHITE;
-		Point Darkest_Point = Dc[0];
-		int i =0;
-		for(vector<Point>::iterator iter = Dc.begin() ; iter != Dc.end() ; ++iter)
-		{
-			++i;
-			cout<<"Dc["<<i<<"] = "<<*iter<<endl;
-			//¼ÇÂ¼DcÖĞÁÁ¶È×îµÍµÄµã×ø±ê¼°ÆäÁÁ¶ÈÖµ
-			if(Darkest_Value > local_window_gray.at<uchar>(*iter))
+			//ÅĞ¶ÏDcÖĞµÄÁÁ¶È£¬Ğ¡ÓÚTµÄ¶ÔÓ¦DcÖĞµÄÏñËØ±»¹éÈëDp,²¢¸Ä±äDcµÄÏàÓ¦±ê¼ÇÎªDp
+			int Dc2Dp = 0;
+			uchar Darkest_Value = WHITE;
+			Point Darkest_Point = Dc[0];
+			int i =0;	//for debug
+			for(vector<Point>::iterator iter = Dc.begin() ; iter != Dc.end() ;)
 			{
-				Darkest_Value = local_window_gray.at<uchar>(*iter);
-				Darkest_Point = *iter;
+				++i;
+				// cout<<"Dc["<<i<<"] = "<<*iter<<endl;
+				//¼ÇÂ¼DcÖĞÁÁ¶È×îµÍµÄµã×ø±ê¼°ÆäÁÁ¶ÈÖµ
+				if(Darkest_Value > local_window_gray.at<uchar>(*iter))
+				{
+					Darkest_Value = local_window_gray.at<uchar>(*iter);
+					Darkest_Point = *iter;
+				}
+				if(local_window_gray.at<uchar>(*iter) < T)
+				{
+					Dp.push_back(*iter);
+					//¸Ä±äimg_state´°¿ÚÖĞÓÉDc×ªÈëDpµÄÏñËØµÄ×´Ì¬Öµ
+					local_window_D_state.at<uchar>(*iter) = PERCOLATION_DP;	
+					//.erase(iter)ºó£¬iter¾Í»á±»Îö¹¹´Ó¶ø³ÉÎªÒ»¸ö¡°Ò°Ö¸Õë¡±£¬ÔòÏÂÒ»´Îµü´úµÄ++iter¾Í»á³ö´í
+					iter = Dc.erase(iter);
+					++Dc2Dp;
+				}
+				else
+				{
+					++iter;
+				}
 			}
-			if(local_window_gray.at<uchar>(*iter) < T)
+			//ÈôDcÖĞÃ»ÓĞÏñËØµÄÁã¶ÈĞ¡ÓÚT,Ôò½«DcÖĞÁÁ¶È×îĞ¡µÄÏñËØ¹éÈëDp
+			if(Dc2Dp == 0)
 			{
-				Dp.push_back(*iter);
-				local_window_state.at<uchar>(*iter) = PERCOLATION_DP;	//¸Ä±äimg_state´°¿ÚÖĞÓÉDc×ªÈëDpµÄÏñËØµÄ×´Ì¬Öµ
-				Dc.erase(iter);
-				++Dc2Dp;
+				Dp.push_back(Darkest_Point);
+				local_window_D_state.at<uchar>(Darkest_Point) = PERCOLATION_DP;
+				//ÒòÎª¾­¹ıDc2Dp==0µÄÅĞ¶Ï£¬ÔòDcÖĞÒ»¶¨ÓĞDarkest_Point£¬ËùÒÔfind()²»»á·´»ÚDcµÄend£¬
+				//Òò¶øÒ²¾Í²»»á½«endÉ¾³ıÒıÆğÂé·³
+				Dc.erase(find(Dc.begin() , Dc.end() , Darkest_Point));
 			}
-		}
-		//ÈôDcÖĞÃ»ÓĞÏñËØµÄÁã¶ÈĞ¡ÓÚT,Ôò½«DcÖĞÁÁ¶È×îĞ¡µÄÏñËØ¹éÈëDp
-		if(Dc2Dp == 0)
+			//½«´ËÂÖÃ»ÓĞ±»¹éÈëDpµÄDcÖØĞÂ±ê¼ÇÎªNOTTEST
+			for(size_t i = 0 ; i<Dc.size() ; ++i)
+			{
+				local_window_D_state.at<uchar>(Dc[i]) = PERCOLATION_NOTTEST;
+			}
+			// cout<<endl;
+			// for(size_t i = 0; i<Dp.size(); ++i)
+			// {
+				// cout<<"Dp["<<i<<"] = "<<Dp[i]<<endl;
+			// }
+			//¼ÆËãDpµÄÍâ½Ó¾ØĞÎ(Ö±Á¢¾ØĞÎ)
+			Rect rect = boundingRect(Dp);
+			// cout<<"DpÍâ½Óup-right ¾ØĞÎÎª["<<rect.x<<", "<<rect.y<<"] and width="<<rect.width<<" height = "<<rect.height<<endl;
+			//DpÊÇ·ñ´¥½çÅĞ¶Ï
+			if(rect.width == N || rect.height == N)
+			{
+				//Íâ½Ó¾ØĞÎ¿í¶Èµ½´ïN
+				Fc = Func_Fc(Dp.size(),max(rect.width , rect.height));
+				if(Fc > Ts || N >= M) //Fc > TsÎªterminate¼ÓËÙ²Ù×÷
+				{
+					break;
+				}
+				else
+				{
+					N += 2;
+				}
+			}
+			// cout<<endl<<endl;
+		}while(iter_count <=4);
+		//½«Fc*255×÷ÎªÁÁ¶ÈÖµ·Åµ½img_resultÖĞ×÷ÎªÁÁ¶È
+		img_result.at<uchar>(Point(x,y)) = (uchar)(Fc*255);
+		if(Fc < Ts)
 		{
-			Dp.push_back(Darkest_Point);
-			local_window_state.at<uchar>(Darkest_Point) = PERCOLATION_DP;
-			Dc.erase(find(Dc.begin() , Dc.end() , Darkest_Point));
+			//ÈôFcĞ¡ÓÚTs£¬Ôò½«focal_pixel¶ÔÓ¦µÄDpÖĞËùÓĞµÄpixel¾ùÔÚimg_stateÖĞ±ê¼ÇÎªCRACK
+			img_state.at<uchar>(focal_pixel) = PERCOLATION_CRACK;
 		}
-		for(size_t i = 0 ; i<Dc.size() ; ++i)
+		else
 		{
-			local_window_state.at<uchar>(Dc[i]) = PERCOLATION_NOTTEST;
+			//ÈôFc´óÓÚTs£¬Ôò½«focal_pixel¶ÔÓ¦µÄDpÖĞËùÓĞµÄpixel¾ùÔÚimg_stateÖĞ±ê¼ÇÎªBACKGROUND
+			img_state.at<uchar>(focal_pixel) = PERCOLATION_BACKGROUND;
 		}
-		for(size_t i = 0; i<Dp.size(); ++i)
-		{
-			cout<<"Dp["<<i<<"] = "<<Dp[i]<<endl;
-		}
-		cout<<endl;
-		}
+		cout<<"["<<x<<", "<<y<<"]µãµÄstate = "<<img_state.at<uchar>(focal_pixel)+0<<" ½á¹ûÁÁ¶È="
+			<<img_result.at<uchar>(Point(x,y))+0<<endl;
+		++pixel_number;
+		y = pixel_number/img_gray.cols;
+		x = pixel_number%img_gray.cols;
+	}
 }

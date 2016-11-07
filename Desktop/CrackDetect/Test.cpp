@@ -41,7 +41,7 @@ int main(int argc, char **argv)
 	cv::cvtColor(img_naive, img_gray, cv::COLOR_BGR2GRAY);
 	Mat img_state;
 	Mat img_result;
-	
+
 	/*Mat img_result(3,3,CV_8UC1);
 	for(size_t i = 0 ; i < img_result.rows ; ++i)
 		for(size_t j = 0 ; j < img_result.cols ; ++j)

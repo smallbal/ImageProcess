@@ -19,9 +19,9 @@ using namespace std;
 #define WHITE 255
 
 enum {
-	PERCOLATION_NOTTEST = 0,
-	PERCOLATION_DP,
+	PERCOLATION_DP = 0,
 	PERCOLATION_DC,
+	PERCOLATION_NOTTEST,
 	PERCOLATION_CRACK,
 	PERCOLATION_BACKGROUND = WHITE
 };
@@ -39,6 +39,7 @@ const vector<uchar> & Func_Max_Pixel_Value(const Mat & img , const vector<Point>
 
 const vector<Point> Func_Pixel_8_Neighborhood( const Mat & img, const Point & p, vector<Point> &vec_out);
 const vector<Point> Func_Area_8_Neighborhood( const Mat & img_naive, vector<Point> circle, Mat & img_state, vector<Point> &vec_out);
+void Func_Area_State_Change(Mat & img_state , const vector<Point> & vec , int percolation_tag);
 
 bool Func_Is_Edge(const Mat & img, const Point & p);
 bool Func_Iter_Spread(const Mat & img_naive, Mat & img_state , Point & focal_pixel , vector<Point> & Dc);
