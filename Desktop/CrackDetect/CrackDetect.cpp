@@ -90,7 +90,8 @@ void Func_Area_State_Change(Mat & img_state , const vector<Point> & vec , int pe
 float Func_Fc(	int Count, //DpÖĞµÄÏñËØ¸öÊı
 						int Cmax //DpµÄ×î´ó³¤¶È
 					 ){
-	return (float)(4*Count/CV_PI/Cmax/Cmax);
+	return 2.0*Count/CV_PI/Cmax/Cmax;
+	// return 4.0*Count/CV_PI/Cmax/Cmax;
 }
 
 
@@ -139,7 +140,7 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 	double Ts = TS;
 	int N = INITIAL_N;
 	int M = INITIAL_M;
-	int x =0 ;	//²»¼Ó±ß¿ò»Ò¶ÈÍ¼µÄÁĞcol
+	int x =1 ;	//²»¼Ó±ß¿ò»Ò¶ÈÍ¼µÄÁĞcol
 	int y =0;	//²»¼Ó±ß¿ò»Ò¶ÈÍ¼µÄĞĞrow
 	int pixel_number = 0; //´Ó0µ½img_gray.size() - 1
 	Point focal_pixel = Point(x+INITIAL_M-1 ,y+INITIAL_M-1); //img_gray_with_borderÉÏ¶ÔÓ¦µÄ×ø±ê
@@ -151,22 +152,23 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 	vector<uchar> Ip;	//Ip¼ÇÂ¼µÄÊÇDpµÄÁÁ¶ÈÖµ
 	vector<Point> Dc;	//Dc¼ÇÂ¼µÄÊÇlocal_windowµÄ×ø±ê
 	float Fc = 0.0;
-	float T = img_gray.at<uchar>(focal_pixel);
+	float T = img_gray.at<uchar>(x,y);
 	float w = 0;	//¼ÓËÙÒò×Ó
 	
 	int iter_count = 0;
-	while(x < img_gray.cols && y < img_gray.rows)
-	{
-		if(x == 0 || x == img_gray.cols-1 || y ==0 || y == img_gray.rows-1)
+	// while(x < img_gray.cols && y < img_gray.rows)
+	// while(pixel_number <= 20)
+	// {
+		/*if(x == 0 || x == img_gray.cols-1 || y ==0 || y == img_gray.rows-1)
 		{
-			N = INITIAL_N * 2 -1; 	//41
-			M = INITIAL_M * 2 - 1 ;	//81
+			N = INITIAL_N * 2 -1; 	
+			M = INITIAL_M * 2 - 1 ;	
 		}
 		else
 		{
-			N = INITIAL_N;		//21
-			M =INITIAL_M;		//41
-		}
+			N = INITIAL_N;		
+			M =INITIAL_M;		
+		}*/
 		focal_pixel = Point(x+INITIAL_M-1 ,y+INITIAL_M-1);	//ÕâÊÇimg_gray_with_border ÉÏµÄ×ø±ê
 		/*Mat::Mat(const Mat& m, const Rect& roi)
 			{
@@ -176,14 +178,15 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
               0 <= roi.y && 0 <= roi.height && roi.y + roi.height <= m.rows );
 			}
 		*/
-		//cout<<"[x,y] "<<focal_pixel<<endl;
+		// cout<<"[x,y] "<<focal_pixel<<endl;
 		local_window_gray = img_gray_with_border( Rect(focal_pixel.x-(M-1)/2 , focal_pixel.y -(M-1)/2 , M , M));
 		local_window_state = img_state( Rect(focal_pixel.x-(M-1)/2 , focal_pixel.y -(M-1)/2 , M , M));
 		local_window_D_state = Mat(M, M, CV_8UC1, Scalar(PERCOLATION_NOTTEST));
-		//local_window_gray = Mat(img_gray_with_border , Rect(focal_pixel.x-(M-1)/2 , focal_pixel.y -(M-1)/2 , M , M));
+		
 		Dp.clear();
 		iter_count = 0;
-		do
+		cout<<"focal_pixel = "<<focal_pixel<<endl;
+		do	//¶Ôfocal_pixelµÄÉøÍ¸
 		{
 			++iter_count;
 			// cout<<"iter_count = "<<iter_count<<endl;
@@ -199,8 +202,8 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 			//½«DpµÄÁÁ¶ÈIpÇó³ö
 			for(size_t i = 0 ; i< Dp.size() ; ++i)
 			{
-				// cout<<"Dp["<<i<<"] = "<<Dp[i]<<endl;
-				Ip.push_back(PIXEL_VALUE(local_window_gray, Dp[i].x , Dp[i].y));
+				// Ip.push_back(PIXEL_VALUE(local_window_gray, Dp[i].y , Dp[i].x));
+				Ip.push_back(local_window_gray.at<uchar>(Dp[i]));
 			}
 			
 			//µÚ2´Îµü´úÇ°ÅĞ¶ÏÉÏ´ÎµÄDpÖĞÊÇ·ñ°üº¬±³¾°µã
@@ -220,10 +223,11 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 			}
 			// cout<<endl;
 			T = Func_Iterator_T(Ip , T , w); 
-			//Çó³ö´ËÂÖDpµÄ8-ÁÚÓòDc£¬²¢ÔÚimg_stateºÍlocal_window_stateÖĞ½«ÏàÓ¦ÏñËØµÄ×´Ì¬±ê¼ÇÎªPERCOLATION_DC
-			Func_Area_8_Neighborhood(local_window_gray , Dp , local_window_D_state , Dc);
 			//½«Dp¶ÔÓ¦ÏñËØÔÚlocal_window_D_stateÉÏ±ê¼ÇÎªPERCOLATION_DP
 			Func_Area_State_Change(local_window_D_state , Dp , PERCOLATION_DP);	
+			//Çó³ö´ËÂÖDpµÄ8-ÁÚÓòDc£¬²¢ÔÚimg_stateºÍlocal_window_stateÖĞ½«ÏàÓ¦ÏñËØµÄ×´Ì¬±ê¼ÇÎªPERCOLATION_DC
+			Func_Area_8_Neighborhood(local_window_gray , Dp , local_window_D_state , Dc);
+			
 
 			//ÅĞ¶ÏDcÖĞµÄÁÁ¶È£¬Ğ¡ÓÚTµÄ¶ÔÓ¦DcÖĞµÄÏñËØ±»¹éÈëDp,²¢¸Ä±äDcµÄÏàÓ¦±ê¼ÇÎªDp
 			int Dc2Dp = 0;
@@ -245,6 +249,7 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 					Dp.push_back(*iter);
 					//¸Ä±äimg_state´°¿ÚÖĞÓÉDc×ªÈëDpµÄÏñËØµÄ×´Ì¬Öµ
 					local_window_D_state.at<uchar>(*iter) = PERCOLATION_DP;	
+					
 					//.erase(iter)ºó£¬iter¾Í»á±»Îö¹¹´Ó¶ø³ÉÎªÒ»¸ö¡°Ò°Ö¸Õë¡±£¬ÔòÏÂÒ»´Îµü´úµÄ++iter¾Í»á³ö´í
 					iter = Dc.erase(iter);
 					++Dc2Dp;
@@ -259,7 +264,9 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 			{
 				Dp.push_back(Darkest_Point);
 				local_window_D_state.at<uchar>(Darkest_Point) = PERCOLATION_DP;
-				//ÒòÎª¾­¹ıDc2Dp==0µÄÅĞ¶Ï£¬ÔòDcÖĞÒ»¶¨ÓĞDarkest_Point£¬ËùÒÔfind()²»»á·´»ÚDcµÄend£¬
+				
+				
+				//ÒòÎª¾­¹ıDc2Dp==0µÄÅĞ¶Ï£¬ÔòDcÖĞÒ»¶¨ÓĞDarkest_Point£¬ËùÒÔfind()²»»á·µ»ØDcµÄend£¬
 				//Òò¶øÒ²¾Í²»»á½«endÉ¾³ıÒıÆğÂé·³
 				Dc.erase(find(Dc.begin() , Dc.end() , Darkest_Point));
 			}
@@ -268,19 +275,15 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 			{
 				local_window_D_state.at<uchar>(Dc[i]) = PERCOLATION_NOTTEST;
 			}
-			// cout<<endl;
-			// for(size_t i = 0; i<Dp.size(); ++i)
-			// {
-				// cout<<"Dp["<<i<<"] = "<<Dp[i]<<endl;
-			// }
 			//¼ÆËãDpµÄÍâ½Ó¾ØĞÎ(Ö±Á¢¾ØĞÎ)
 			Rect rect = boundingRect(Dp);
 			// cout<<"DpÍâ½Óup-right ¾ØĞÎÎª["<<rect.x<<", "<<rect.y<<"] and width="<<rect.width<<" height = "<<rect.height<<endl;
 			//DpÊÇ·ñ´¥½çÅĞ¶Ï
-			if(rect.width == N || rect.height == N)
+			if((rect.width >= N) || (rect.height >= N))
 			{
 				//Íâ½Ó¾ØĞÎ¿í¶Èµ½´ïN
 				Fc = Func_Fc(Dp.size(),max(rect.width , rect.height));
+				cout<<Dp.size()<<" "<<max(rect.width , rect.height)<<" "<<Fc<<endl;
 				if(Fc > Ts || N >= M) //Fc > TsÎªterminate¼ÓËÙ²Ù×÷
 				{
 					break;
@@ -291,23 +294,35 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 				}
 			}
 			// cout<<endl<<endl;
-		}while(iter_count <=4);
+		}while(true);
 		//½«Fc*255×÷ÎªÁÁ¶ÈÖµ·Åµ½img_resultÖĞ×÷ÎªÁÁ¶È
-		img_result.at<uchar>(Point(x,y)) = (uchar)(Fc*255);
+		img_result.at<uchar>(Point(x,y)) = (uchar)(Fc*WHITE);
+		//cout<<Fc<<endl;
 		if(Fc < Ts)
 		{
-			//ÈôFcĞ¡ÓÚTs£¬Ôò½«focal_pixel¶ÔÓ¦µÄDpÖĞËùÓĞµÄpixel¾ùÔÚimg_stateÖĞ±ê¼ÇÎªCRACK
+			//ÈôFcĞ¡ÓÚTs£¬Ôò½«focal_pixel¶ÔÓ¦µÄDpÖĞËùÓĞµÄpixelÔÚimg_stateÖĞ±ê¼ÇÎªCRACK
 			img_state.at<uchar>(focal_pixel) = PERCOLATION_CRACK;
+			//focal_pixelÎªCrack£¬Ôò½«´Ë´ÎpercolationµÄDpËùÔÚimg_stateÈ«²¿±êÎªCRACK
+			for(size_t i = 0 ; i <Dp.size() ; ++i)
+			{
+				local_window_state.at<uchar>(Dp[i]) = PERCOLATION_CRACK;
+			}
+			
 		}
 		else
 		{
-			//ÈôFc´óÓÚTs£¬Ôò½«focal_pixel¶ÔÓ¦µÄDpÖĞËùÓĞµÄpixel¾ùÔÚimg_stateÖĞ±ê¼ÇÎªBACKGROUND
 			img_state.at<uchar>(focal_pixel) = PERCOLATION_BACKGROUND;
 		}
-		cout<<"["<<x<<", "<<y<<"]µãµÄstate = "<<img_state.at<uchar>(focal_pixel)+0<<" ½á¹ûÁÁ¶È="
-			<<img_result.at<uchar>(Point(x,y))+0<<endl;
-		++pixel_number;
-		y = pixel_number/img_gray.cols;
-		x = pixel_number%img_gray.cols;
-	}
+		// cout<<"["<<x<<", "<<y<<"]µãµÄstate = "<<img_state.at<uchar>(focal_pixel)+0<<" ½á¹ûÁÁ¶È="
+			// <<img_result.at<uchar>(Point(x,y))+0<<endl;
+		
+		// imshow("local_D", local_window_D_state);
+		// cout<<local_window_D_state<<endl;
+		do
+		{
+			++pixel_number;
+			y = pixel_number/img_gray.cols;
+			x = pixel_number%img_gray.cols;
+		}while((img_state.at<uchar>(y+INITIAL_M-1, x+INITIAL_M-1) != PERCOLATION_NOTTEST) && (x < img_gray.cols) && (y < img_gray.rows));
+	// }
 }
