@@ -90,8 +90,8 @@ void Func_Area_State_Change(Mat & img_state , const vector<Point> & vec , int pe
 float Func_Fc(	int Count, //Dp中的像素个数
 						int Cmax //Dp的最大长度
 					 ){
-	return 2.0*Count/CV_PI/Cmax/Cmax;
-	// return 4.0*Count/CV_PI/Cmax/Cmax;
+	// return 2.0*Count/CV_PI/Cmax/Cmax;
+	return 4.0*Count/CV_PI/Cmax/Cmax;
 }
 
 
@@ -137,10 +137,10 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 	copyMakeBorder(img_gray , img_gray_with_border , INITIAL_M-1 , INITIAL_M-1 , INITIAL_M-1 , INITIAL_M-1 , BORDER_CONSTANT ,Scalar(WHITE));
 	copyMakeBorder(img_state,img_state , INITIAL_M-1 , INITIAL_M-1 , INITIAL_M-1 , INITIAL_M-1 , BORDER_CONSTANT , Scalar(PERCOLATION_BACKGROUND));
 	
-	double Ts = TS;
+	float Ts = TS;
 	int N = INITIAL_N;
 	int M = INITIAL_M;
-	int x =1 ;	//不加边框灰度图的列col
+	int x =50 ;	//不加边框灰度图的列col
 	int y =0;	//不加边框灰度图的行row
 	int pixel_number = 0; //从0到img_gray.size() - 1
 	Point focal_pixel = Point(x+INITIAL_M-1 ,y+INITIAL_M-1); //img_gray_with_border上对应的坐标
@@ -157,9 +157,9 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 	
 	int iter_count = 0;
 	// while(x < img_gray.cols && y < img_gray.rows)
-	// while(pixel_number <= 20)
-	// {
-		/*if(x == 0 || x == img_gray.cols-1 || y ==0 || y == img_gray.rows-1)
+	// while(pixel_number < 2)
+	{
+		if(x == 0 || x == img_gray.cols-1 || y ==0 || y == img_gray.rows-1)
 		{
 			N = INITIAL_N * 2 -1; 	
 			M = INITIAL_M * 2 - 1 ;	
@@ -168,7 +168,7 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 		{
 			N = INITIAL_N;		
 			M =INITIAL_M;		
-		}*/
+		}
 		focal_pixel = Point(x+INITIAL_M-1 ,y+INITIAL_M-1);	//这是img_gray_with_border 上的坐标
 		/*Mat::Mat(const Mat& m, const Rect& roi)
 			{
@@ -185,7 +185,8 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 		
 		Dp.clear();
 		iter_count = 0;
-		cout<<"focal_pixel = "<<focal_pixel<<endl;
+		
+		//local_window_state.at<uchar>(Point((M-1)/2-1 , (M-1)/2)) = PERCOLATION_BACKGROUND;
 		do	//对focal_pixel的渗透
 		{
 			++iter_count;
@@ -195,8 +196,9 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 			//第1次迭代：将focal_pixel加入Dp
 			if(iter_count == 1)
 			{
-				Dp.push_back(Point((M-1)/2,(M-1)/2));
-				local_window_D_state.at<uchar>(Point((M-1)/2,(M-1)/2)) = PERCOLATION_DP;
+					Dp.push_back(Point((M-1)/2,(M-1)/2));
+					local_window_D_state.at<uchar>(Point((M-1)/2,(M-1)/2)) = PERCOLATION_DP;
+				
 			}
 			
 			//将Dp的亮度Ip求出
@@ -217,39 +219,62 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 				}
 				if(iter != Dp.end())
 				{
+					// cout<<"jump"<<endl;
 					Fc = 1.0;
 					break;
 				}
 			}
-			// cout<<endl;
+
 			T = Func_Iterator_T(Ip , T , w); 
 			//将Dp对应像素在local_window_D_state上标记为PERCOLATION_DP
 			Func_Area_State_Change(local_window_D_state , Dp , PERCOLATION_DP);	
 			//求出此轮Dp的8-邻域Dc，并在img_state和local_window_state中将相应像素的状态标记为PERCOLATION_DC
 			Func_Area_8_Neighborhood(local_window_gray , Dp , local_window_D_state , Dc);
-			
 
 			//判断Dc中的亮度，小于T的对应Dc中的像素被归入Dp,并改变Dc的相应标记为Dp
 			int Dc2Dp = 0;
-			uchar Darkest_Value = WHITE;
-			Point Darkest_Point = Dc[0];
-			int i =0;	//for debug
+			uchar Darkest_Value = WHITE;	//Dc中亮度最低值
+			vector<Point> Darkest_Points;	//Dc中亮度最低值的点的坐标
+			for(vector<Point>::iterator iter = Dc.begin() ; iter != Dc.end(); )
+			{
+				//剔除Dc中不在N*N区域中的点
+				if((*iter).x < (M-N)/2 || (*iter).x > (M+N-2)/2 || (*iter).y < (M-N)/2 || (*iter).y > (M+N-2)/2)
+				{
+					local_window_D_state.at<uchar>(*iter) = PERCOLATION_NOTTEST;
+					iter = Dc.erase(iter);
+				}
+				else
+				{
+					++iter;
+				}
+			}
+			// cout<<"M = "<<M<<" N = "<<N<<endl;
+			// cout<<"iter_count "<<iter_count<<endl;
+			// for(size_t i = 0 ; i < Dc.size() ;++i)
+			// {
+				// cout<<" Dc["<<i<<"] = "<<Dc[i]<<" ";
+			// }
+			// cout<<endl;
 			for(vector<Point>::iterator iter = Dc.begin() ; iter != Dc.end() ;)
 			{
-				++i;
-				// cout<<"Dc["<<i<<"] = "<<*iter<<endl;
-				//记录Dc中亮度最低的点坐标及其亮度值
-				if(Darkest_Value > local_window_gray.at<uchar>(*iter))
+				//记录Dc中亮度最低值
+				uchar temp_lightness = local_window_gray.at<uchar>(*iter);
+				if(Darkest_Value > temp_lightness)
 				{
-					Darkest_Value = local_window_gray.at<uchar>(*iter);
-					Darkest_Point = *iter;
+					//更新Dc中亮度最小值，并清空坐标vector
+					Darkest_Value = temp_lightness;
+					Darkest_Points.clear();
 				}
+				if(Darkest_Value == temp_lightness)
+				{
+					Darkest_Points.push_back(*iter);
+				}
+				//若有满足亮度低于T的像素点，将其转入Dp
 				if(local_window_gray.at<uchar>(*iter) < T)
 				{
 					Dp.push_back(*iter);
 					//改变img_state窗口中由Dc转入Dp的像素的状态值
 					local_window_D_state.at<uchar>(*iter) = PERCOLATION_DP;	
-					
 					//.erase(iter)后，iter就会被析构从而成为一个“野指针”，则下一次迭代的++iter就会出错
 					iter = Dc.erase(iter);
 					++Dc2Dp;
@@ -259,16 +284,10 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 					++iter;
 				}
 			}
-			//若Dc中没有像素的零度小于T,则将Dc中亮度最小的像素归入Dp
+			//若Dc中没有像素的零度小于T,则将Dc中亮度为最小值的所有像素归入Dp
 			if(Dc2Dp == 0)
 			{
-				Dp.push_back(Darkest_Point);
-				local_window_D_state.at<uchar>(Darkest_Point) = PERCOLATION_DP;
-				
-				
-				//因为经过Dc2Dp==0的判断，则Dc中一定有Darkest_Point，所以find()不会返回Dc的end，
-				//因而也就不会将end删除引起麻烦
-				Dc.erase(find(Dc.begin() , Dc.end() , Darkest_Point));
+				Dp.insert(Dp.end(), Darkest_Points.begin(), Darkest_Points.end());
 			}
 			//将此轮没有被归入Dp的Dc重新标记为NOTTEST
 			for(size_t i = 0 ; i<Dc.size() ; ++i)
@@ -278,11 +297,12 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 			//计算Dp的外接矩形(直立矩形)
 			Rect rect = boundingRect(Dp);
 			// cout<<"Dp外接up-right 矩形为["<<rect.x<<", "<<rect.y<<"] and width="<<rect.width<<" height = "<<rect.height<<endl;
-			//Dp是否触界判断
+			//Dp是否触界判断	
 			if((rect.width >= N) || (rect.height >= N))
 			{
 				//外接矩形宽度到达N
 				Fc = Func_Fc(Dp.size(),max(rect.width , rect.height));
+				cout<<"focal_pixel = "<<focal_pixel<<endl;
 				cout<<Dp.size()<<" "<<max(rect.width , rect.height)<<" "<<Fc<<endl;
 				if(Fc > Ts || N >= M) //Fc > Ts为terminate加速操作
 				{
@@ -296,7 +316,7 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 			// cout<<endl<<endl;
 		}while(true);
 		//将Fc*255作为亮度值放到img_result中作为亮度
-		img_result.at<uchar>(Point(x,y)) = (uchar)(Fc*WHITE);
+		
 		//cout<<Fc<<endl;
 		if(Fc < Ts)
 		{
@@ -305,14 +325,26 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 			//focal_pixel为Crack，则将此次percolation的Dp所在img_state全部标为CRACK
 			for(size_t i = 0 ; i <Dp.size() ; ++i)
 			{
-				local_window_state.at<uchar>(Dp[i]) = PERCOLATION_CRACK;
+				if(local_window_state.at<uchar>(Dp[i]) == PERCOLATION_NOTTEST)
+				{
+					local_window_state.at<uchar>(Dp[i]) = PERCOLATION_CRACK;
+					img_result.at<uchar>(Dp[i].y+y-(M-1)/2,Dp[i].x+x-(M-1)/2) = (uchar)(Fc*WHITE);
+				}
 			}
-			
+			cout<<"Crack"<<endl;
 		}
 		else
 		{
+			Fc = 1;
 			img_state.at<uchar>(focal_pixel) = PERCOLATION_BACKGROUND;
+			cout<<"Background"<<endl;
 		}
+		img_result.at<uchar>(Point(x,y)) = (uchar)(Fc*WHITE);
+		// img_result.at<uchar>(Point(x,y)) = (uchar)(Fc*WHITE);
+		 // Mat roi = img_gray(Rect(x-(M-1)/2, y-(M-1)/2,M,M));
+		// cout<<"roi = "<<endl<<" "<<roi<<endl;
+		cout<<"local_gray = "<<endl<<" "<<local_window_gray<<endl;
+		cout<<"D_state = "<<endl<<" "<<local_window_D_state<<endl;
 		// cout<<"["<<x<<", "<<y<<"]点的state = "<<img_state.at<uchar>(focal_pixel)+0<<" 结果亮度="
 			// <<img_result.at<uchar>(Point(x,y))+0<<endl;
 		
@@ -324,5 +356,6 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 			y = pixel_number/img_gray.cols;
 			x = pixel_number%img_gray.cols;
 		}while((img_state.at<uchar>(y+INITIAL_M-1, x+INITIAL_M-1) != PERCOLATION_NOTTEST) && (x < img_gray.cols) && (y < img_gray.rows));
-	// }
+		
+	}
 }

@@ -31,12 +31,22 @@ static void Test8NeiArea(const Mat & img_naive,  Mat & img_state , const vector<
 }
 
 
-int iter_count = 0;
+void MyLine( Mat img, Point start, Point end )
+{
+	int thickness = 3;
+	int lineType = 8;
+	line( img,
+			start,
+			end,
+			Scalar( 0 ),
+			thickness,
+			lineType );
+}
 
 int main(int argc, char **argv)
 {
 
-	Mat img_naive = imread("./test.jpg");
+	Mat img_naive = imread("./atom.bmp");
 	Mat img_gray;	//»Ò¶ÈÍ¼Ïñ
 	cv::cvtColor(img_naive, img_gray, cv::COLOR_BGR2GRAY);
 	Mat img_state;
@@ -57,6 +67,20 @@ int main(int argc, char **argv)
 	imshow("gray", img_gray);
 	imshow("state", img_state);
 	imshow("result", img_result);
+
+
+	//Mat atom_image = Mat( 100, 100, CV_8UC1,Scalar(255) );
+	//Mat atom_state;
+	//Mat atom_result;
+	//MyLine(atom_image,Point(50,0),Point(50,100));
+	//Func_Percolation(atom_image, atom_state, atom_result);
+	///*imwrite( "C:/Users/Administrator/Desktop/CrackDetect/atom.jpg", atom_image );
+	//imwrite( "C:/Users/Administrator/Desktop/CrackDetect/atom.bmp", atom_image );
+	//imwrite( "C:/Users/Administrator/Desktop/CrackDetect/atom.png", atom_image );*/
+	//imshow("atom_naive" , atom_image);
+	//imshow("atom_state" , atom_state);
+	//imshow("atom_result", atom_result);
+	//
 	//cout<<img_state<<endl;
 	
 
