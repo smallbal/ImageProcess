@@ -43,15 +43,23 @@ void MyLine( Mat img, Point start, Point end )
 			lineType );
 }
 
+
+
 int main(int argc, char **argv)
 {
 
-	Mat img_naive = imread("./atom.bmp");
+	Mat img_naive = imread("./test3.png");
 	Mat img_gray;	//»Ò¶ÈÍ¼Ïñ
 	cv::cvtColor(img_naive, img_gray, cv::COLOR_BGR2GRAY);
 	Mat img_state;
 	Mat img_result;
 	
+	Func_Percolation(img_gray , img_state , img_result);
+	imwrite( "C:/Users/Administrator/Desktop/CrackDetect/test_result.png", img_result );
+	imshow("result" , img_result);
+
+
+
 	/*
 	img_state = img_gray(Rect(100, 50, 70,110));
 	for(int i = 0; i<70;i++)
@@ -62,11 +70,7 @@ int main(int argc, char **argv)
 	cout<<PIXEL_VALUE(img_result , 1 ,2)-0<<endl;
 	cout<<img_result.at<uchar>(Point(1,2))-0<<endl;
 	*/
-	Func_Percolation(img_gray , img_state , img_result);
-	
-	imshow("gray", img_gray);
-	imshow("state", img_state);
-	imshow("result", img_result);
+
 
 
 	//Mat atom_image = Mat( 100, 100, CV_8UC1,Scalar(255) );

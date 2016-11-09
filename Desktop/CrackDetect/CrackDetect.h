@@ -12,10 +12,10 @@ using namespace cv;
 using namespace std;
 
 
-// #define INITIAL_N 21	//local window的初始size为21
-// #define INITIAL_M 41	//local window的M设为41
-#define INITIAL_N 5	//local window的初始size为21
-#define INITIAL_M 9	//local window的M设为41
+#define INITIAL_N 21	//local window的初始size为21
+#define INITIAL_M 41	//local window的M设为41
+// #define INITIAL_N 11	//local window的初始size为21
+// #define INITIAL_M 21	//local window的M设为41
 #define TS 0.60	//Fc阈值
 #define BLACK 0
 #define WHITE 255
@@ -23,6 +23,7 @@ using namespace std;
 enum {
 	PERCOLATION_DP = 0,
 	PERCOLATION_DC,
+	PERCOLATION_BORDER,
 	PERCOLATION_NOTTEST = 128, //测试
 	PERCOLATION_CRACK = 0,	//测试
 	PERCOLATION_BACKGROUND = WHITE

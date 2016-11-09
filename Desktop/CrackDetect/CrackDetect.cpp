@@ -134,8 +134,11 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 	img_result = Mat(img_gray.rows, img_gray.cols , CV_8UC1 , Scalar(WHITE));
 	Mat img_gray_with_border;
 	//增加上下左右各宽为M的边框，便于percolation
-	copyMakeBorder(img_gray , img_gray_with_border , INITIAL_M-1 , INITIAL_M-1 , INITIAL_M-1 , INITIAL_M-1 , BORDER_CONSTANT ,Scalar(WHITE));
-	copyMakeBorder(img_state,img_state , INITIAL_M-1 , INITIAL_M-1 , INITIAL_M-1 , INITIAL_M-1 , BORDER_CONSTANT , Scalar(PERCOLATION_BACKGROUND));
+	// copyMakeBorder(img_gray , img_gray_with_border , INITIAL_M-1 , INITIAL_M-1 , INITIAL_M-1 , INITIAL_M-1 , BORDER_CONSTANT ,Scalar(WHITE));
+	// copyMakeBorder(img_state,img_state , INITIAL_M-1 , INITIAL_M-1 , INITIAL_M-1 , INITIAL_M-1 , BORDER_CONSTANT , Scalar(PERCOLATION_BACKGROUND));
+	
+	copyMakeBorder(img_gray , img_gray_with_border , INITIAL_M-1 , INITIAL_M-1 , INITIAL_M-1 , INITIAL_M-1 , BORDER_REPLICATE);
+	copyMakeBorder(img_state,img_state , INITIAL_M-1 , INITIAL_M-1 , INITIAL_M-1 , INITIAL_M-1 , BORDER_CONSTANT , Scalar(PERCOLATION_NOTTEST));
 	
 	float Ts = TS;
 	int N = INITIAL_N;
@@ -156,7 +159,7 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 	float w = 0;	//加速因子
 	
 	int iter_count = 0;
-	// while(x < img_gray.cols && y < img_gray.rows)
+	while(x < img_gray.cols && y < img_gray.rows)
 	// while(pixel_number < 2)
 	{
 		if(x == 0 || x == img_gray.cols-1 || y ==0 || y == img_gray.rows-1)
@@ -179,7 +182,7 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 			}
 		*/
 		// cout<<"[x,y] "<<focal_pixel<<endl;
-		local_window_gray = img_gray_with_border( Rect(focal_pixel.x-(M-1)/2 , focal_pixel.y -(M-1)/2 , M , M));
+		local_window_gray = img_gray_with_border( Rect(focal_pixel.x-(M-1)/2 , focal_pixel.y -(M-1)/2 , M , M)); 
 		local_window_state = img_state( Rect(focal_pixel.x-(M-1)/2 , focal_pixel.y -(M-1)/2 , M , M));
 		local_window_D_state = Mat(M, M, CV_8UC1, Scalar(PERCOLATION_NOTTEST));
 		
@@ -302,10 +305,11 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 			{
 				//外接矩形宽度到达N
 				Fc = Func_Fc(Dp.size(),max(rect.width , rect.height));
-				cout<<"focal_pixel = "<<focal_pixel<<endl;
-				cout<<Dp.size()<<" "<<max(rect.width , rect.height)<<" "<<Fc<<endl;
+				// cout<<"focal_pixel = "<<focal_pixel<<endl;
+				// cout<<Dp.size()<<" "<<max(rect.width , rect.height)<<" "<<Fc<<endl;
 				if(Fc > Ts || N >= M) //Fc > Ts为terminate加速操作
 				{
+					// cout<<"end"<<endl;
 					break;
 				}
 				else
@@ -323,28 +327,35 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 			//若Fc小于Ts，则将focal_pixel对应的Dp中所有的pixel在img_state中标记为CRACK
 			img_state.at<uchar>(focal_pixel) = PERCOLATION_CRACK;
 			//focal_pixel为Crack，则将此次percolation的Dp所在img_state全部标为CRACK
-			for(size_t i = 0 ; i <Dp.size() ; ++i)
-			{
-				if(local_window_state.at<uchar>(Dp[i]) == PERCOLATION_NOTTEST)
-				{
-					local_window_state.at<uchar>(Dp[i]) = PERCOLATION_CRACK;
-					img_result.at<uchar>(Dp[i].y+y-(M-1)/2,Dp[i].x+x-(M-1)/2) = (uchar)(Fc*WHITE);
-				}
-			}
-			cout<<"Crack"<<endl;
+			// for(size_t i = 0 ; i <Dp.size() ; ++i)
+			// {
+				// if(local_window_state.at<uchar>(Dp[i]) == PERCOLATION_NOTTEST)
+				// {
+					// if((x==0 && Dp[i].x>=(M-1)/2) || (x==img_gray.cols-1 && Dp[i].x<=(M-1)/2)
+						// || (y==0 && Dp[i].y>=(M-1)/2) || (y==img_gray.rows-1 && Dp[i].y<=(M-1)/2))
+					// {
+						// local_window_state.at<uchar>(Dp[i]) = PERCOLATION_CRACK;
+						// img_result.at<uchar>(Dp[i].y+y-(M-1)/2,Dp[i].x+x-(M-1)/2) = (uchar)(Fc*WHITE);
+					// }
+				// }
+			// }
+			// cout<<"Crack"<<endl;
 		}
 		else
 		{
 			Fc = 1;
 			img_state.at<uchar>(focal_pixel) = PERCOLATION_BACKGROUND;
-			cout<<"Background"<<endl;
+			// cout<<"Background"<<endl;
 		}
 		img_result.at<uchar>(Point(x,y)) = (uchar)(Fc*WHITE);
 		// img_result.at<uchar>(Point(x,y)) = (uchar)(Fc*WHITE);
 		 // Mat roi = img_gray(Rect(x-(M-1)/2, y-(M-1)/2,M,M));
 		// cout<<"roi = "<<endl<<" "<<roi<<endl;
-		cout<<"local_gray = "<<endl<<" "<<local_window_gray<<endl;
-		cout<<"D_state = "<<endl<<" "<<local_window_D_state<<endl;
+		// cout<<"roi = "<<endl<<" "<<roi<<endl;
+		
+		// cout<<"local_gray = "<<endl<<" "<<local_window_gray<<endl;
+		// cout<<"D_state = "<<endl<<" "<<local_window_D_state<<endl;
+		
 		// cout<<"["<<x<<", "<<y<<"]点的state = "<<img_state.at<uchar>(focal_pixel)+0<<" 结果亮度="
 			// <<img_result.at<uchar>(Point(x,y))+0<<endl;
 		
