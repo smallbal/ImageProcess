@@ -2,7 +2,7 @@
 #include <math.h> //abs()
 #include <algorithm> /*find()*/
 // #include<Windows.h> //高精度时间计算
-#include <time.h> //clock() , CLOCKS_PER_SEC
+// #include <time.h> //clock() , CLOCKS_PER_SEC
 #include "CrackDetect.h"
 //Opencv中的Point(x,y)对应坐标系的(col,row)
 
