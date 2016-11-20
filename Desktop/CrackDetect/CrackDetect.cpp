@@ -143,7 +143,7 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 	float Ts = TS;
 	int N = INITIAL_N;
 	int M = INITIAL_M;
-	int x =50 ;	//不加边框灰度图的列col
+	int x =0 ;	//不加边框灰度图的列col
 	int y =0;	//不加边框灰度图的行row
 	int pixel_number = 0; //从0到img_gray.size() - 1
 	Point focal_pixel = Point(x+INITIAL_M-1 ,y+INITIAL_M-1); //img_gray_with_border上对应的坐标
@@ -300,10 +300,12 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 			//计算Dp的外接矩形(直立矩形)
 			Rect rect = boundingRect(Dp);
 			// cout<<"Dp外接up-right 矩形为["<<rect.x<<", "<<rect.y<<"] and width="<<rect.width<<" height = "<<rect.height<<endl;
+			
 			//Dp是否触界判断	
-			if((rect.width >= N) || (rect.height >= N))
+			// if((rect.width >= N) || (rect.height >= N))
+			if((rect.x <= (M-N)/2) || (rect.y <= (M-N)/2) || ((rect.x+rect.width) >= (M+N-2)/2) || ((rect.y+rect.height) >= (M+N-2)/2))
 			{
-				//外接矩形宽度到达N
+				
 				Fc = Func_Fc(Dp.size(),max(rect.width , rect.height));
 				// cout<<"focal_pixel = "<<focal_pixel<<endl;
 				// cout<<Dp.size()<<" "<<max(rect.width , rect.height)<<" "<<Fc<<endl;
@@ -321,24 +323,28 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 		}while(true);
 		//将Fc*255作为亮度值放到img_result中作为亮度
 		
-		//cout<<Fc<<endl;
+		// cout<<Fc<<endl;
 		if(Fc < Ts)
 		{
 			//若Fc小于Ts，则将focal_pixel对应的Dp中所有的pixel在img_state中标记为CRACK
 			img_state.at<uchar>(focal_pixel) = PERCOLATION_CRACK;
 			//focal_pixel为Crack，则将此次percolation的Dp所在img_state全部标为CRACK
-			// for(size_t i = 0 ; i <Dp.size() ; ++i)
-			// {
-				// if(local_window_state.at<uchar>(Dp[i]) == PERCOLATION_NOTTEST)
-				// {
+			int x_temp ,y_temp;
+			for(size_t i = 0 ; i <Dp.size() ; ++i)
+			{
+				if(local_window_state.at<uchar>(Dp[i]) == PERCOLATION_NOTTEST)
+				{
 					// if((x==0 && Dp[i].x>=(M-1)/2) || (x==img_gray.cols-1 && Dp[i].x<=(M-1)/2)
 						// || (y==0 && Dp[i].y>=(M-1)/2) || (y==img_gray.rows-1 && Dp[i].y<=(M-1)/2))
-					// {
-						// local_window_state.at<uchar>(Dp[i]) = PERCOLATION_CRACK;
-						// img_result.at<uchar>(Dp[i].y+y-(M-1)/2,Dp[i].x+x-(M-1)/2) = (uchar)(Fc*WHITE);
-					// }
-				// }
-			// }
+					x_temp = Dp[i].x - (M-1)/2 + x;
+					y_temp = Dp[i].y - (M-1)/2 + y;
+					if(x_temp >= 0 && x_temp <img_result.cols && y_temp >= 0 && y_temp < img_result.rows)
+					{
+						local_window_state.at<uchar>(Dp[i]) = PERCOLATION_CRACK;
+						img_result.at<uchar>(Dp[i].y+y-(M-1)/2,Dp[i].x+x-(M-1)/2) = (uchar)(Fc*WHITE);
+					}
+				}
+			}
 			// cout<<"Crack"<<endl;
 		}
 		else
@@ -361,12 +367,16 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 		
 		// imshow("local_D", local_window_D_state);
 		// cout<<local_window_D_state<<endl;
+		
+		// cout<<"Point(x,y) = "<<x<<", "<<y<<endl;
 		do
 		{
 			++pixel_number;
 			y = pixel_number/img_gray.cols;
 			x = pixel_number%img_gray.cols;
 		}while((img_state.at<uchar>(y+INITIAL_M-1, x+INITIAL_M-1) != PERCOLATION_NOTTEST) && (x < img_gray.cols) && (y < img_gray.rows));
+		
+		//cout<<"now Point(x,y) = "<<x<<", "<<y<<endl;
 		
 	}
 }
