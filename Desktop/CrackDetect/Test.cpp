@@ -49,14 +49,14 @@ int main(int argc, char **argv)
 {
 	cout<<"Begin"<<endl;
 	//Mat img_naive = imread("./atom.png");
-	Mat img_naive = imread("./test_gray.png");
+	Mat img_naive = imread("./atom_gray.png");
 	Mat img_gray;	//»Ò¶ÈÍ¼Ïñ
 	cv::cvtColor(img_naive, img_gray, cv::COLOR_BGR2GRAY);
 	Mat img_state;
 	Mat img_result;
 	
 	Func_Percolation(img_gray , img_state , img_result);
-	imwrite( "C:/Users/Administrator/Desktop/CrackDetect/test_result1.png", img_result );
+	imwrite( "C:/Users/Administrator/Desktop/CrackDetect/test_result3.png", img_result );
 	imshow("gray", img_gray);
 	imshow("state", img_state);
 	imshow("result" , img_result);

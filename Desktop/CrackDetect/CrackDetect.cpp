@@ -106,10 +106,13 @@ const vector<uchar> & Func_Max_Pixel_Value(const Mat & img , const vector<Point>
 }
 
 //T = max{ max[ I(p) ] , T } + w, 
+//T = max{ min[ I(p) ], T } + w
 float Func_Iterator_T(const vector<uchar> & Ip, //I(p)
 									   float T,	//上次的亮度阈值T
 									   float w)	//加速因子
 {
+	
+	//max{max[ I(p)], T}+w
 	float I_max = Ip[0];
 	for(size_t i = 1; i<Ip.size(); ++i)
 	{
@@ -119,6 +122,18 @@ float Func_Iterator_T(const vector<uchar> & Ip, //I(p)
 	if(I_max < T)
 		I_max = T;
 	return I_max+w;
+	/*
+	//max{ min[ I(p)], T} + w
+	float I_out = Ip[0];
+	for(size_t i = 1 ; i < Ip.size() ; ++i)
+	{
+		if ( Ip[i] < I_out )
+			I_out = Ip[i];
+	}
+	if ( I_out < T )
+		I_out = T;
+	return I_out+w;
+	*/
 }
 
 //w' = Fc * w
@@ -141,9 +156,9 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 	copyMakeBorder(img_state,img_state , INITIAL_M-1 , INITIAL_M-1 , INITIAL_M-1 , INITIAL_M-1 , BORDER_CONSTANT , Scalar(PERCOLATION_NOTTEST));
 	
 	float Ts = TS;
-	int N = INITIAL_N;
+	int N = INITIAL_N ;
 	int M = INITIAL_M;
-	int x =0 ;	//不加边框灰度图的列col
+	int x =55 ;	//不加边框灰度图的列col
 	int y =0;	//不加边框灰度图的行row
 	int pixel_number = 0; //从0到img_gray.size() - 1
 	Point focal_pixel = Point(x+INITIAL_M-1 ,y+INITIAL_M-1); //img_gray_with_border上对应的坐标
@@ -155,14 +170,15 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 	vector<uchar> Ip;	//Ip记录的是Dp的亮度值
 	vector<Point> Dc;	//Dc记录的是local_window的坐标
 	float Fc = 0.0;
-	float T = img_gray.at<uchar>(x,y);
+	float T = img_gray.at<uchar>(y,x);
 	float w = 0;	//加速因子
 	
 	int iter_count = 0;
-	while(x < img_gray.cols && y < img_gray.rows)
+	cout<<"[x,y]= ["<<x<<","<<y<<"] I="<<img_gray.at<uchar>(y,x)<<endl;
+	 while(x < img_gray.cols && y < img_gray.rows)
 	// while(pixel_number < 2)
 	{
-		if(x == 0 || x == img_gray.cols-1 || y ==0 || y == img_gray.rows-1)
+		/*if(x == 0 || x == img_gray.cols-1 || y ==0 || y == img_gray.rows-1)
 		{
 			N = INITIAL_N * 2 -1; 	
 			M = INITIAL_M * 2 - 1 ;	
@@ -171,7 +187,7 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 		{
 			N = INITIAL_N;		
 			M =INITIAL_M;		
-		}
+		}*/
 		focal_pixel = Point(x+INITIAL_M-1 ,y+INITIAL_M-1);	//这是img_gray_with_border 上的坐标
 		/*Mat::Mat(const Mat& m, const Rect& roi)
 			{
@@ -199,6 +215,7 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 			//第1次迭代：将focal_pixel加入Dp
 			if(iter_count == 1)
 			{
+					float T = img_gray.at<uchar>(y,x);
 					Dp.push_back(Point((M-1)/2,(M-1)/2));
 					local_window_D_state.at<uchar>(Point((M-1)/2,(M-1)/2)) = PERCOLATION_DP;
 				
@@ -227,8 +244,8 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 					break;
 				}
 			}
-
 			T = Func_Iterator_T(Ip , T , w); 
+			// cout<<"T = "<<T<<endl;
 			//将Dp对应像素在local_window_D_state上标记为PERCOLATION_DP
 			Func_Area_State_Change(local_window_D_state , Dp , PERCOLATION_DP);	
 			//求出此轮Dp的8-邻域Dc，并在img_state和local_window_state中将相应像素的状态标记为PERCOLATION_DC
@@ -300,15 +317,16 @@ void Func_Percolation( const Mat & img_gray , Mat & img_state , Mat & img_result
 			//计算Dp的外接矩形(直立矩形)
 			Rect rect = boundingRect(Dp);
 			// cout<<"Dp外接up-right 矩形为["<<rect.x<<", "<<rect.y<<"] and width="<<rect.width<<" height = "<<rect.height<<endl;
-			
+			// cout<<"local_D_state = "<<endl<<local_window_D_state<<endl<<endl;
+			// cout<<"local_window_gray = "<<endl<<" "<<local_window_gray<<endl;
 			//Dp是否触界判断	
 			// if((rect.width >= N) || (rect.height >= N))
-			if((rect.x <= (M-N)/2) || (rect.y <= (M-N)/2) || ((rect.x+rect.width) >= (M+N-2)/2) || ((rect.y+rect.height) >= (M+N-2)/2))
+			if((rect.x <= ((M-N)/2)) || (rect.y <= ((M-N)/2)) || ((rect.x+rect.width-1) >= ((M+N-2)/2)) || ((rect.y+rect.height-1) >= ((M+N-2)/2)))
 			{
 				
 				Fc = Func_Fc(Dp.size(),max(rect.width , rect.height));
 				// cout<<"focal_pixel = "<<focal_pixel<<endl;
-				// cout<<Dp.size()<<" "<<max(rect.width , rect.height)<<" "<<Fc<<endl;
+				 cout<<Dp.size()<<" "<<max(rect.width , rect.height)<<" "<<Fc<<endl;
 				if(Fc > Ts || N >= M) //Fc > Ts为terminate加速操作
 				{
 					// cout<<"end"<<endl;

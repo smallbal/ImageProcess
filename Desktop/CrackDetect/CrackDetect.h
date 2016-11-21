@@ -14,9 +14,9 @@ using namespace std;
 
 //#define INITIAL_N 21	//local window的初始size为21
 //#define INITIAL_M 41	//local window的M设为41
- #define INITIAL_N 7	//local window的初始size为21
- #define INITIAL_M 13	//local window的M设为41
-#define TS 0.55	//Fc阈值
+ #define INITIAL_N 17	//local window的初始size为21
+ #define INITIAL_M 33//local window的M设为41
+#define TS 0.6	//Fc阈值
 #define BLACK 0
 #define WHITE 255
 
